@@ -39,7 +39,7 @@ TEMPORAL_VERSION=1.25.2 TEMPORAL_UI_VERSION=2.31.2 vagrant provision
 
 ## First Workflow
 
-Planned first slice:
+Current first slice:
 
 1. Start a local Temporal worker.
 2. Run a workflow for `doom-dashboard`.
@@ -49,3 +49,27 @@ Planned first slice:
 
 GitHub access should use an explicit token such as `GITHUB_TOKEN`; workflow code
 should stay deterministic, with network calls isolated in activities.
+
+Run tests:
+
+```sh
+go test ./...
+```
+
+With the Temporal VM running, start a worker in one shell:
+
+```sh
+export TEMPORAL_ADDRESS=127.0.0.1:7233
+export GITHUB_TOKEN=...
+go run ./cmd/worker
+```
+
+Then start the workflow in another shell:
+
+```sh
+export TEMPORAL_ADDRESS=127.0.0.1:7233
+go run ./cmd/run-workflow
+```
+
+The runner starts `FindLatestCodexReadyIssue` on the `prime-mover` task queue and
+prints the newest open `codex-ready` issue in `talaniz/doom-control`.
