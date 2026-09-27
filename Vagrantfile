@@ -35,108 +35,15 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     vb.memory = VM_MEMORY
   end
 
-  config.vm.provision "shell",
-                      privileged: true,
-                      env: {
-                        "TEMPORAL_VERSION" => TEMPORAL_VERSION,
-                        "TEMPORAL_UI_VERSION" => TEMPORAL_UI_VERSION,
-                        "POSTGRES_VERSION" => POSTGRES_VERSION
-                      },
-                      inline: <<~SHELL
-                        set -eux
-
-                        export DEBIAN_FRONTEND=noninteractive
-                        apt-get update
-                        apt-get install -y \\
-                          ca-certificates \\
-                          curl \\
-                          docker.io \\
-                          git \\
-                          golang-go \\
-                          make
-
-                        if apt-cache show docker-compose-plugin >/dev/null 2>&1; then
-                          apt-get install -y docker-compose-plugin
-                        elif apt-cache show docker-compose >/dev/null 2>&1; then
-                          apt-get install -y docker-compose
-                        fi
-
-                        systemctl enable --now docker
-                        usermod -aG docker vagrant
-
-                        install -d -m 0755 /opt/temporal/dynamicconfig
-                        install -d -m 0755 /opt/temporal/data/postgres
-
-                        cat >/opt/temporal/dynamicconfig/development-sql.yaml <<'YAML'
-                        system.forceSearchAttributesCacheRefreshOnRead:
-                          - value: true
-                            constraints: {}
-                        YAML
-
-                        cat >/opt/temporal/docker-compose.yml <<YAML
-                        services:
-                          postgresql:
-                            image: postgres:${POSTGRES_VERSION}
-                            container_name: temporal-postgresql
-                            environment:
-                              POSTGRES_USER: temporal
-                              POSTGRES_PASSWORD: temporal
-                              POSTGRES_DB: temporal
-                            volumes:
-                              - /opt/temporal/data/postgres:/var/lib/postgresql/data
-                            healthcheck:
-                              test: ["CMD-SHELL", "pg_isready -U temporal"]
-                              interval: 10s
-                              timeout: 5s
-                              retries: 10
-
-                          temporal:
-                            image: temporalio/auto-setup:${TEMPORAL_VERSION}
-                            container_name: temporal
-                            depends_on:
-                              postgresql:
-                                condition: service_healthy
-                            environment:
-                              DB: postgres12
-                              DB_PORT: "5432"
-                              POSTGRES_USER: temporal
-                              POSTGRES_PWD: temporal
-                              POSTGRES_SEEDS: postgresql
-                              DYNAMIC_CONFIG_FILE_PATH: config/dynamicconfig/development-sql.yaml
-                              TEMPORAL_ADDRESS: 0.0.0.0:7233
-                            ports:
-                              - "7233:7233"
-                            volumes:
-                              - /opt/temporal/dynamicconfig:/etc/temporal/config/dynamicconfig
-
-                          temporal-ui:
-                            image: temporalio/ui:${TEMPORAL_UI_VERSION}
-                            container_name: temporal-ui
-                            depends_on:
-                              - temporal
-                            environment:
-                              TEMPORAL_ADDRESS: temporal:7233
-                              TEMPORAL_CORS_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
-                            ports:
-                              - "8233:8080"
-                        YAML
-
-                        cat >/usr/local/bin/temporal-compose <<'SH'
-                        #!/usr/bin/env sh
-                        set -eu
-                        if docker compose version >/dev/null 2>&1; then
-                          exec docker compose -f /opt/temporal/docker-compose.yml "$@"
-                        fi
-                        exec docker-compose -f /opt/temporal/docker-compose.yml "$@"
-                        SH
-                        chmod 0755 /usr/local/bin/temporal-compose
-
-                        cat >/etc/profile.d/prime-mover-temporal.sh <<'SH'
-                        export TEMPORAL_ADDRESS=127.0.0.1:7233
-                        SH
-
-                        temporal-compose up -d
-                      SHELL
+  config.vm.provision "ansible_local" do |ansible|
+    ansible.install = true
+    ansible.playbook = "provisioning/playbook.yml"
+    ansible.extra_vars = {
+      "temporal_version" => TEMPORAL_VERSION,
+      "temporal_ui_version" => TEMPORAL_UI_VERSION,
+      "postgres_version" => POSTGRES_VERSION
+    }
+  end
 
   config.vm.post_up_message = <<~MESSAGE
     Temporal VM is configured.

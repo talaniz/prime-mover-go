@@ -10,7 +10,8 @@ GitHub issue labeled `codex-ready`.
 ## Development VM
 
 The included `Vagrantfile` starts a Debian 12 VM with Docker, Go, Temporal Server,
-Postgres, and Temporal UI.
+Postgres, and Temporal UI. Provisioning runs through `ansible_local`, so Vagrant
+installs and runs Ansible inside the guest.
 
 ```sh
 vagrant up
@@ -73,3 +74,13 @@ go run ./cmd/run-workflow
 
 The runner starts `FindLatestCodexReadyIssue` on the `prime-mover` task queue and
 prints the newest open `codex-ready` issue in `talaniz/doom-control`.
+
+## Secrets
+
+The VM setup does not require Ansible Vault. Temporal uses local development
+credentials inside Docker Compose, and GitHub credentials are not written by
+provisioning.
+
+For live GitHub workflow testing, pass `GITHUB_TOKEN` into the worker shell
+explicitly. Add Ansible Vault only if provisioning later needs to create a guest-side
+secret file or environment file automatically.
