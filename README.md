@@ -9,7 +9,7 @@ GitHub issue labeled `codex-ready`.
 
 ## Development VM
 
-The included `Vagrantfile` starts a Debian 12 VM with Docker, Go, Temporal Server,
+The included `Vagrantfile` starts a Debian VM with Docker, Go, Temporal Server,
 Postgres, and Temporal UI. Provisioning runs through `ansible_local`, so Vagrant
 installs and runs Ansible inside the guest.
 
@@ -17,10 +17,10 @@ installs and runs Ansible inside the guest.
 vagrant up
 ```
 
-Default endpoints:
+Default host endpoints:
 
-- Temporal frontend: `192.168.56.50:7233`
-- Temporal UI: `http://192.168.56.50:8233`
+- Temporal frontend: `127.0.0.1:7233`
+- Temporal UI: `http://127.0.0.1:8233`
 
 Useful commands:
 
@@ -31,10 +31,13 @@ temporal-compose logs -f temporal
 docker run --rm --network host temporalio/admin-tools:1.25.2 temporal operator cluster health
 ```
 
-You can override the VM and Temporal versions:
+You can override the VM, private network, provider, and Temporal versions:
 
 ```sh
 PRIME_MOVER_VM_IP=192.168.56.51 vagrant up
+PRIME_MOVER_VM_PRIVATE_NETWORK=true vagrant up
+PRIME_MOVER_VM_BOX=bento/debian-12 VAGRANT_DEFAULT_PROVIDER=vmware_desktop vagrant up
+PRIME_MOVER_DOCKER_DNS_SERVERS=1.1.1.1,8.8.8.8 vagrant provision
 TEMPORAL_VERSION=1.25.2 TEMPORAL_UI_VERSION=2.31.2 vagrant provision
 ```
 
