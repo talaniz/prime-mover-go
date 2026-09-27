@@ -68,6 +68,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       "temporal_version" => TEMPORAL_VERSION,
       "temporal_ui_version" => TEMPORAL_UI_VERSION,
       "postgres_version" => POSTGRES_VERSION,
+      "guest_dns_servers" => DOCKER_DNS_SERVERS,
       "docker_dns_servers" => DOCKER_DNS_SERVERS
     }
   end

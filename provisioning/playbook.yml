@@ -6,6 +6,9 @@
     temporal_version: "1.25.2"
     temporal_ui_version: "2.31.2"
     postgres_version: "16"
+    guest_dns_servers:
+      - "1.1.1.1"
+      - "8.8.8.8"
     docker_dns_servers:
       - "1.1.1.1"
       - "8.8.8.8"
@@ -35,6 +38,15 @@
         name: docker-compose
         state: present
       when: compose_plugin is failed
+
+    - name: Configure guest DNS for image pulls
+      ansible.builtin.copy:
+        dest: /etc/resolv.conf
+        mode: "0644"
+        content: |
+          {% for dns_server in guest_dns_servers %}
+          nameserver {{ dns_server }}
+          {% endfor %}
 
     - name: Create Docker config directory
       ansible.builtin.file:
